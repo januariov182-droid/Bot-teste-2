@@ -13,6 +13,8 @@
  *   features      — Array de strings com recursos incluídos
  *   deliveryMessage   — Mensagem mostrada no Discord após aprovação
  *   downloadMessage   — Mensagem enviada via DM com o link/chave do produto
+ *   jarPath       — Caminho do arquivo .jar enviado apos o pagamento
+ *   fileName      — Nome opcional do arquivo enviado no Discord
  */
 const plugins = {
   // ── Plugin 1 ──────────────────────────────────────────────────────────────
@@ -20,6 +22,8 @@ const plugins = {
     name: "Anti-Raid Pro",
     emoji: "🛡️",
     price: 29.9,
+    jarPath: "C:/Users/Vnz/.gemini/antigravity/scratch/VnSpawners/target/VnSpawners-1.0-SNAPSHOT.jar",
+    fileName: "VnSpawners.jar",
     shortDesc: "Proteção avançada contra raids e invasões",
     description:
       "Proteja seu servidor com detecção inteligente de raids em tempo real. " +
@@ -48,6 +52,8 @@ const plugins = {
     name: "AutoMod Ultra",
     emoji: "🤖",
     price: 19.9,
+    jarPath: "C:/Users/Vnz/Downloads/plugins/AutoModUltra.jar",
+    fileName: "AutoModUltra.jar",
     shortDesc: "Moderação automática com IA e filtros avançados",
     description:
       "O **AutoMod Ultra** usa filtros por expressões regulares e análise semântica " +
@@ -76,6 +82,8 @@ const plugins = {
     name: "Ticket System",
     emoji: "🎫",
     price: 24.9,
+    jarPath: "C:/Users/Vnz/Downloads/plugins/TicketSystem.jar",
+    fileName: "TicketSystem.jar",
     shortDesc: "Sistema completo de suporte por tickets",
     description:
       "Crie um canal de suporte profissional com o **Ticket System**. " +
@@ -103,7 +111,9 @@ const plugins = {
   level_system: {
     name: "Level System XP",
     emoji: "⭐",
-    price: 00.01,
+    price: 0.01,
+    jarPath: "C:\Users\Vnz\Desktop\VnPluginsVenda\VnSpawners-1.0-SNAPSHOT.jar",
+    fileName: "LevelSystemXP.jar",
     shortDesc: "Sistema de XP e ranking para engajar membros",
     description:
       "Engaje sua comunidade com o **Level System XP**. Membros ganham XP ao enviar " +

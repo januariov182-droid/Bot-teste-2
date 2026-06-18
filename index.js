@@ -6,11 +6,14 @@ const {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  AttachmentBuilder,
   Events,
 } = require("discord.js");
 const { generatePixPayment, checkPaymentStatus } = require("./mercadopago");
 const { plugins } = require("./plugins");
 const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
 require("dotenv").config();
 
 // ─── Cliente Discord ──────────────────────────────────────────────────────────
@@ -25,6 +28,7 @@ const activePayments = new Map();
 // O ID da mensagem é salvo em store-message.json para sobreviver a reinicializações.
 // Na inicialização: se existir → edita a mensagem existente. Se não → cria uma nova.
 const STORE_MSG_FILE = "./store-message.json";
+const LICENSES_FILE = "./licenses.json";
 
 function loadStoredMessageId() {
   try {
@@ -37,6 +41,86 @@ function loadStoredMessageId() {
 
 function saveStoredMessageId(messageId) {
   fs.writeFileSync(STORE_MSG_FILE, JSON.stringify({ messageId }), "utf8");
+}
+
+function loadLicenses() {
+  try {
+    const raw = fs.readFileSync(LICENSES_FILE, "utf8");
+    const data = JSON.parse(raw);
+    return Array.isArray(data.licenses) ? data.licenses : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLicenses(licenses) {
+  fs.writeFileSync(LICENSES_FILE, JSON.stringify({ licenses }, null, 2), "utf8");
+}
+
+function generateLicenseKey() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const licenses = loadLicenses();
+
+  while (true) {
+    const key = Array.from({ length: 3 }, () =>
+      Array.from({ length: 4 }, () => alphabet[crypto.randomInt(0, alphabet.length)]).join("")
+    ).join("-");
+
+    if (!licenses.some((license) => license.license_key === key)) {
+      return key;
+    }
+  }
+}
+
+function issueLicense({ userId, pluginKey, plugin, paymentId }) {
+  const licenses = loadLicenses();
+  const licenseKey = generateLicenseKey();
+
+  licenses.push({
+    license_key: licenseKey,
+    status: "unused",
+    buyer_discord_id: userId,
+    product_key: pluginKey,
+    product: plugin.name,
+    payment_id: String(paymentId),
+    created_at: new Date().toISOString(),
+    server_id: null,
+  });
+
+  saveLicenses(licenses);
+  return licenseKey;
+}
+
+function getPluginJarPath(plugin) {
+  const configuredPath = plugin.jarPath || process.env.DELIVERY_JAR_PATH;
+  if (!configuredPath) return null;
+  return path.resolve(__dirname, configuredPath);
+}
+
+async function sendPurchasedPlugin(user, plugin, licenseKey) {
+  const jarPath = getPluginJarPath(plugin);
+  const embed = new EmbedBuilder()
+    .setTitle(`Seu plugin: ${plugin.name}`)
+    .setDescription(
+      `Obrigado pela compra!\n\n` +
+      `Chave de ativacao: \`${licenseKey}\`\n\n` +
+      "Coloque o arquivo .jar na pasta plugins do servidor e use a chave para ativar."
+    )
+    .setColor(0x57f287);
+
+  const payload = { embeds: [embed] };
+
+  if (jarPath && fs.existsSync(jarPath)) {
+    payload.files = [
+      new AttachmentBuilder(jarPath, {
+        name: plugin.fileName || `${plugin.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.jar`,
+      }),
+    ];
+  } else {
+    embed.setFooter({ text: jarPath ? `Arquivo .jar nao encontrado em ${jarPath}` : "jarPath nao configurado neste plugin" });
+  }
+
+  await user.send(payload);
 }
 
 // Monta o embed e o select menu permanentes da loja
@@ -343,34 +427,34 @@ async function handleVerify(interaction, pluginKey) {
 
     if (status === "approved") {
       activePayments.delete(interaction.user.id);
+      const licenseKey = issueLicense({
+        userId: interaction.user.id,
+        pluginKey,
+        plugin,
+        paymentId: active.paymentId,
+      });
+
+      let deliveryMessage = "Verifique seu DM — enviamos o arquivo .jar e sua chave de ativacao.";
+      try {
+        const dm = await interaction.user.createDM();
+        await sendPurchasedPlugin(dm, plugin, licenseKey);
+      } catch (err) {
+        console.error("Erro ao enviar produto por DM:", err);
+        deliveryMessage = `Nao consegui enviar DM. Sua chave e: \`${licenseKey}\``;
+      }
 
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setTitle("🎉  Pagamento aprovado!")
             .setDescription(
-              `Obrigado, <@${interaction.user.id}>! Seu **${plugin.name}** foi liberado.\n${plugin.deliveryMessage}`
+              `Obrigado, <@${interaction.user.id}>! Seu **${plugin.name}** foi liberado.\n${deliveryMessage}`
             )
             .setColor(0x57f287)
             .setFooter({ text: "Obrigado por comprar conosco!" }),
         ],
         components: [],
       });
-
-      // Envia o produto por DM
-      try {
-        const dm = await interaction.user.createDM();
-        await dm.send({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(`✅  Seu plugin: ${plugin.name}`)
-              .setDescription(plugin.downloadMessage)
-              .setColor(0x57f287),
-          ],
-        });
-      } catch {
-        // DM bloqueada — ignora silenciosamente
-      }
 
     } else if (status === "pending" || status === "in_process") {
       await interaction.editReply({
