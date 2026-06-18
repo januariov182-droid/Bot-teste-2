@@ -1,0 +1,17 @@
+{
+  "name": "discord-pix-bot",
+  "version": "2.0.0",
+  "description": "Bot Discord com loja permanente de plugins e pagamento via PIX (Mercado Pago)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "mercadopago": "^2.0.15",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
