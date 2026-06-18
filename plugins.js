@@ -103,7 +103,7 @@ const plugins = {
   level_system: {
     name: "Level System XP",
     emoji: "⭐",
-    price: 00.01,
+    price: 00.1,
     shortDesc: "Sistema de XP e ranking para engajar membros",
     description:
       "Engaje sua comunidade com o **Level System XP**. Membros ganham XP ao enviar " +
