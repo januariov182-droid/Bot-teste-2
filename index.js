@@ -436,8 +436,7 @@ async function handleVerify(interaction, pluginKey) {
 
       let deliveryMessage = "Verifique seu DM — enviamos o arquivo .jar e sua chave de ativacao.";
       try {
-        const dm = await interaction.user.createDM();
-        await sendPurchasedPlugin(dm, plugin, licenseKey);
+        await sendPurchasedPlugin(interaction.user, plugin, licenseKey);
       } catch (err) {
         console.error("Erro ao enviar produto por DM:", err);
         deliveryMessage = `Nao consegui enviar DM. Sua chave e: \`${licenseKey}\``;

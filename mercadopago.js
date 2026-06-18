@@ -1,10 +1,13 @@
 const { MercadoPagoConfig, Payment } = require("mercadopago");
+const crypto = require("crypto");
 require("dotenv").config();
 
 // Inicializa o cliente do Mercado Pago com seu Access Token
+// Timeout de 30s — o Render tem latência maior por estar nos EUA,
+// 10s era curto demais e causava "Premature close"
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
-  options: { timeout: 10000 },
+  options: { timeout: 30000 },
 });
 
 const paymentClient = new Payment(mpClient);
@@ -30,7 +33,10 @@ async function generatePixPayment({ amount, description, payerEmail, externalRef
     date_of_expiration: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 min
   };
 
-  const payment = await paymentClient.create({ body });
+  const payment = await paymentClient.create({
+    body,
+    requestOptions: { idempotencyKey: crypto.randomUUID() },
+  });
   return payment;
 }
 
