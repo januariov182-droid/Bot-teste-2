@@ -1,3 +1,10 @@
+// Servidor HTTP mínimo para o Render não matar o processo
+const http = require("http");
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => res.end("ok")).listen(PORT, () => {
+  console.log(`🌐 HTTP keepalive rodando na porta ${PORT}`);
+});
+
 const {
   Client,
   GatewayIntentBits,
@@ -436,7 +443,8 @@ async function handleVerify(interaction, pluginKey) {
 
       let deliveryMessage = "Verifique seu DM — enviamos o arquivo .jar e sua chave de ativacao.";
       try {
-        await sendPurchasedPlugin(interaction.user, plugin, licenseKey);
+        const dm = await interaction.user.createDM();
+        await sendPurchasedPlugin(dm, plugin, licenseKey);
       } catch (err) {
         console.error("Erro ao enviar produto por DM:", err);
         deliveryMessage = `Nao consegui enviar DM. Sua chave e: \`${licenseKey}\``;
